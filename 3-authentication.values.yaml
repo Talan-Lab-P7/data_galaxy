@@ -1,0 +1,12 @@
+webservices:
+  clientInitialization:
+    publicDataJson: |
+
+    privateData: |
+
+    privateDataKey: |
+
+    samlDataJson: |
+
+    samlMetadataXml: |
+

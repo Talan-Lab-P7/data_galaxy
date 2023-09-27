@@ -1,0 +1,139 @@
+connectivity-api:
+  apitoolbox:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1536Mi
+      requests:
+        cpu: 500m
+        memory: 1536Mi
+  configmap:
+    NODE_OPTIONS: '--max-old-space-size=1236'
+  statefulset:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1536Mi
+      requests:
+        cpu: 500m
+        memory: 1536Mi
+connector-server:
+  deployment:
+    resources:
+      limits:
+        cpu: "4"
+        memory: 16Gi
+      requests:
+        cpu: 250m
+        memory: 512Mi
+datascienceapi:
+  deployment:
+    resources:
+      limits:
+        cpu: "4"
+        memory: 16Gi
+      requests:
+        cpu: 250m
+        memory: 512Mi
+elasticsearch-a:
+  configmap:
+    ES_JAVA_OPTS: -Xms1g -Xmx1g
+  statefulset:
+    resources:
+      limits:
+        cpu: "1"
+        memory: 2Gi
+      requests:
+        cpu: "1"
+        memory: 2Gi
+elasticsearch-b:
+  configmap:
+    ES_JAVA_OPTS: -Xms1g -Xmx1g
+  statefulset:
+    resources:
+      limits:
+        cpu: "1"
+        memory: 2Gi
+      requests:
+        cpu: "1"
+        memory: 2Gi
+logstash:
+  logstashJavaOpts: -Xms375m -Xmx375m
+  resources:
+    requests:
+      cpu: 350m
+      memory: 750Mi
+    limits:
+      cpu: 350m
+      memory: 750Mi
+minio:
+  resources:
+    limits:
+      cpu: 250m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+publicapi:
+  configmap:
+    NODE_OPTIONS: '--max-old-space-size=1236'
+  deployment:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1536Mi
+      requests:
+        cpu: 500m
+        memory: 1536Mi
+sqlserver:
+  statefulset:
+    resources:
+      limits:
+        cpu: "1"
+        memory: 2Gi
+      requests:
+        cpu: "1"
+        memory: 2Gi
+webclient:
+  deployment:
+    resources:
+      limits:
+        cpu: 250m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 512Mi
+webservices:
+  statefulset:
+    datagalaxyadminservice:
+      resources:
+        limits:
+          cpu: "4"
+          memory: 16Gi
+        requests:
+          cpu: 250m
+          memory: 512Mi
+    datagalaxyservicesweb:
+      resources:
+        limits:
+          cpu: "4"
+          memory: 16Gi
+        requests:
+          cpu: "1"
+          memory: 2Gi
+    datagalaxyutilitytoolconsole:
+      resources:
+        limits:
+          cpu: "4"
+          memory: 16Gi
+        requests:
+          cpu: 250m
+          memory: 512Mi
+    filebeat:
+      resources:
+        limits:
+          cpu: "1"
+          memory: 2Gi
+        requests:
+          cpu: "1"
+          memory: 2Gi

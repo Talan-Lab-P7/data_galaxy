@@ -1,0 +1,13 @@
+# in order to work, the ingress route associated to this new service should have a path with a unique regex group
+# only this regex group will be kept in the path
+
+# more info on the request-transformer plugin on https://docs.konghq.com/hub/kong-inc/request-transformer/
+
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: from-publicapi-to-webservices
+plugin: request-transformer
+config:
+  replace:
+    uri: '/api$(uri_captures[1])'

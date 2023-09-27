@@ -1,0 +1,88 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: datagalaxy-internal
+  annotations:
+    konghq.com/plugins: dg-auth
+{{- if and (not .Values.disableTls) (not .Values.useClientCertificate) }}
+    cert-manager.io/issuer: "certificate-issuer"
+{{- end }}
+spec:
+  ingressClassName: kong
+  rules:
+{{- range .Values.ingress.apiHosts }}
+  - host: {{ tpl . $ }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: datagalaxypublicapi
+            port:
+              number: 80
+        path: /v2
+        pathType: Prefix
+      - backend:
+          service:
+            name: datagalaxyserviceswebfrompublicapi
+            port:
+              number: 80
+        path: /v2(/data-quality.*)
+        pathType: Prefix
+{{- end }}
+{{- range .Values.ingress.appHosts }}
+  - host: {{ tpl . $ }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: datagalaxywebclient
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  {{- range $.Values.ingress.webServicesPaths }}
+      - backend:
+          service:
+            name: datagalaxyservicesweb
+            port:
+              number: 80
+        path: {{ tpl . $ }}
+        pathType: Prefix
+  {{- end }}
+  {{ if $.Values.ingress.enableApiDoc }}
+      - backend:
+          service:
+            name: datagalaxyservicesweb
+            port:
+              number: 80
+        path: /swagger
+        pathType: Prefix
+  {{- end }}
+{{- end }}
+{{- if not .Values.disableTls }}
+  tls:
+  {{- if not .Values.useClientCertificate }}
+    {{- range $index, $value := .Values.ingress.apiHosts }}
+  - hosts:
+    - {{ tpl $value $ }}
+    secretName: api-certificate-{{ $index }}
+    {{- end }}
+    {{- range $index, $value := .Values.ingress.appHosts }}
+  - hosts:
+    - {{ tpl $value $ }}
+    secretName: app-certificate-{{ $index }}
+    {{- end }}
+  {{- else }}
+    {{- $clientCertificateSecretName := .Values.clientCertificate.secretName -}}
+    {{- range .Values.ingress.apiHosts }}
+  - hosts:
+    - {{ tpl . $ }}
+    secretName: {{ $clientCertificateSecretName }}
+    {{- end }}
+    {{- range .Values.ingress.appHosts }}
+  - hosts:
+    - {{ tpl . $ }}
+    secretName: {{ $clientCertificateSecretName }}
+    {{- end }}
+  {{- end }}
+{{- end }}

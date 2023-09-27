@@ -1,0 +1,32 @@
+global:
+  chartVersion:   "platform/helm:1.16.0"
+  productRelease: "platform/3.6.9"
+
+connectivity-api:
+  imageTag: "1.5.2"
+connector-server:
+  imageTag: "2.0.2"
+datascienceapi:
+  dcp:
+    imageTag: "1.1.1"
+  tagssuggestions:
+    imageTag: "1.0.8"
+  textquality:
+    imageTag: "1.0.2"
+hubservice:
+  imageTag: "3.6.0"
+publicapi:
+  imageTag: "2.14.2"
+webclient:
+  configmap:
+    DG_CONFIG_VERSION_NUMBER: '"3.6.1"'
+  imageTag: "3.6.1"
+webservices:
+  datagalaxyadminservice:
+    imageTag: "3.6.0"
+  datagalaxyservicesweb:
+    configmap:
+      DG_VERSION: '2023.1'
+    imageTag: "3.6.2"
+  datagalaxyutilitytoolconsole:
+    imageTag: "3.6.0"

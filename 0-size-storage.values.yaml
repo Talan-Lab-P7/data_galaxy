@@ -1,0 +1,18 @@
+connectivity-api:
+  statefulset:
+    storage: 1Gi
+elasticsearch-a:
+  statefulset:
+    storage: 50Gi
+elasticsearch-b:
+  statefulset:
+    storage: 50Gi
+minio:
+  persistence:
+    size: 50Gi
+sqlserver:
+  statefulset:
+    storage: 20Gi
+webservices:
+  statefulset:
+    storage: 50Gi

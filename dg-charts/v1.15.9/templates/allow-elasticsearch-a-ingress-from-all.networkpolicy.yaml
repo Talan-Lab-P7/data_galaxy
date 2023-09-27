@@ -1,0 +1,10 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-elasticsearch-a-ingress-from-all
+spec:
+  ingress:
+  - {}
+  podSelector:
+    matchLabels:
+      app: elasticsearch-a

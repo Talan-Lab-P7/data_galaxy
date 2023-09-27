@@ -1,0 +1,81 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: datagalaxy
+  annotations:
+{{- if not .Values.useClientCertificate }}
+    cert-manager.io/issuer: "certificate-issuer"
+{{- end }}
+{{- range $key, $value := .Values.ingress.annotations }}
+    {{ $key }}: {{ tpl $value $ | quote }}
+{{- end }}
+spec:
+  rules:
+{{- range .Values.ingress.apiHosts }}
+  - host: {{ tpl . $ }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: datagalaxypublicapi
+            port:
+              number: 80
+        path: /v2
+        pathType: Prefix
+{{- end }}
+{{- range .Values.ingress.appHosts }}
+  - host: {{ tpl . $ }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: datagalaxywebclient
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  {{- range $.Values.ingress.webServicesPaths }} 
+      - backend:
+          service:
+            name: datagalaxyservicesweb
+            port:
+              number: 80
+        path: {{ tpl . $ }}
+        pathType: Prefix
+  {{- end }}       
+  {{ if $.Values.ingress.enableApiDoc }}
+      - backend:
+          service:
+            name: datagalaxyservicesweb
+            port:
+              number: 80
+        path: /swagger
+        pathType: Prefix
+  {{- end }}
+{{- end }}
+{{- if not .Values.disableTls }}
+  tls:
+  {{- if not .Values.useClientCertificate }}
+    {{- range $index, $value := .Values.ingress.apiHosts }}
+  - hosts:
+    - {{ tpl $value $ }}
+    secretName: api-certificate-{{ $index }}
+    {{- end }}
+    {{- range $index, $value := .Values.ingress.appHosts }}
+  - hosts:
+    - {{ tpl $value $ }}
+    secretName: app-certificate-{{ $index }}
+    {{- end }}
+  {{- else }}
+    {{- range .Values.ingress.apiHosts }}
+  - hosts:
+    - {{ tpl . $ }}
+    secretName: client-certificate
+    {{- end }}
+    {{- range .Values.ingress.appHosts }}
+  - hosts:
+    - {{ tpl . $ }}
+    secretName: client-certificate
+    {{- end }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,4 @@
+webservices:
+  datagalaxyservicesweb:
+    configmap:
+      DG_DAILY_MAINTENANCE_CRON_EXPRESSION: '0 22 * * *'

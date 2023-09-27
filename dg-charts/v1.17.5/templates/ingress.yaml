@@ -1,0 +1,65 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: datagalaxy
+  annotations:
+{{- if and (not .Values.disableTls) (not .Values.useClientCertificate) }}
+    cert-manager.io/issuer: "certificate-issuer"
+{{- end }}
+{{- range $key, $value := .Values.ingress.annotations }}
+    {{ $key }}: {{ tpl $value $ | quote }}
+{{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.ingressClassName }}
+  rules:
+{{- range .Values.ingress.apiHosts }}
+  - host: {{ tpl . $ }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: kong-proxy
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+{{- end}}
+{{- range .Values.ingress.appHosts }}
+  - host: {{ tpl . $ }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: kong-proxy
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+{{- end}}
+{{- if not .Values.disableTls }}
+  tls:
+  {{- if not .Values.useClientCertificate }}
+    {{- range $index, $value := .Values.ingress.apiHosts }}
+  - hosts:
+    - {{ tpl $value $ }}
+    secretName: api-certificate-{{ $index }}
+    {{- end }}
+    {{- range $index, $value := .Values.ingress.appHosts }}
+  - hosts:
+    - {{ tpl $value $ }}
+    secretName: app-certificate-{{ $index }}
+    {{- end }}
+  {{- else }}
+    {{- $clientCertificateSecretName := .Values.clientCertificate.secretName -}}
+    {{- range .Values.ingress.apiHosts }}
+  - hosts:
+    - {{ tpl . $ }}
+    secretName: {{ $clientCertificateSecretName }}
+    {{- end }}
+    {{- range .Values.ingress.appHosts }}
+  - hosts:
+    - {{ tpl . $ }}
+    secretName: {{ $clientCertificateSecretName }}
+    {{- end }}
+  {{- end }}
+{{- end }}

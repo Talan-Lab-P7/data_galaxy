@@ -1,0 +1,27 @@
+global:
+  chartVersion:   "datagalaxy.azurecr.io/platform/helm:1.15.7"
+  productRelease: "platform/3.3.2"
+
+connectivity-api:
+  imageTag: "1.4.0"
+connector-server:
+  imageTag: "1.9.2"
+datascienceapi:
+  imageTag: "1.0.1"
+hubservice:
+  imageTag: "3.3.0"
+publicapi:
+  imageTag: "2.12.0"
+webclient:
+  configmap:
+    DG_CONFIG_VERSION_NUMBER: '"3.3.1"'
+  imageTag: "3.3.1"
+webservices:
+  datagalaxyadminservice:
+    imageTag: "3.3.0"
+  datagalaxyservicesweb:
+    configmap:
+      DG_VERSION: '2022.5'
+    imageTag: "3.3.1"
+  datagalaxyutilitytoolconsole:
+    imageTag: "3.3.0"

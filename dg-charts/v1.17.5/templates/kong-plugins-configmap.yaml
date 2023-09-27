@@ -1,0 +1,17 @@
+{{- $localDict := dict "previous" "-"}}
+{{- range $path, $_ := $.Files.Glob "kong-plugins/**" }}
+{{- $folder := base (dir $path) }}
+{{- if not (eq $folder $localDict.previous)}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{$folder}}
+binaryData:
+  {{- range $p, $_ := $.Files.Glob (printf "%s%s%s" "kong-plugins/" $folder "/*.*") }}
+  {{ base $p }}: |-
+    {{ $.Files.Get $p | b64enc }}
+{{- end }}
+---
+{{- end }}
+{{- $_ := set $localDict "previous" $folder -}}
+{{- end }}

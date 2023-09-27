@@ -1,0 +1,429 @@
+global:
+  apiHost: "{{ tpl .Values.global.instanceName . }}.api.datagalaxy.com"
+  appHost: "{{ tpl .Values.global.instanceName . }}.datagalaxy.com"
+  imagePullSecretsAsYaml: |-
+    - name: "datagalaxy-registry"
+    - name: "datagalaxydev-registry"
+    - name: "docker-container-registry"
+  instanceName: "{{ .Release.Name }}"
+  loadBalancerSourceRangesAsYaml: |-
+    - 5.51.59.16/32     # Matthieu
+    - 51.103.27.46/32   # internalreporting
+    - 77.131.57.44/32   # Réda
+    - 77.195.113.200/32 # Christian
+    - 78.198.191.127/32 # Thomas
+    - 90.63.246.234/32  # Bureau
+  registry: "datagalaxy.azurecr.io"
+
+clientCertificate:
+  secretName: "client-certificate"
+connectivity-api:
+  apitoolbox:
+    imageRepository: "{{ tpl .Values.global.registry . }}/platform/docker/api-toolbox"
+  configmap:
+    CONNECTOR_SERVER_JAVA_URL:           'http://connector-server:8000'
+    CONNECTOR_SERVER_JAVA_WEBSOCKET_URL: 'ws://connector-server:8000'
+    DATAGALAXY_PUBLIC_API_URL:           'http://datagalaxypublicapi/v2'
+    PUBLIC_BASE_URL:                     'http://connectivity-api:4000'
+    VAULT_URL:                           'http://vault:8200'
+  imageRepository: "{{ tpl .Values.global.registry . }}/platform/docker/connectivity-api"
+  imageTag:        null
+  statefulset:
+    imagePullSecretsAsYaml: "{{ tpl .Values.global.imagePullSecretsAsYaml . }}"
+    nodeSelector:
+      qos-burstable: "true"
+    resources: {}
+    storage:   null
+connector-server:
+  configmap:
+    CONNECTOR_DATAGALAXY_PUBLIC_API_URL: 'http://datagalaxypublicapi/v2'
+    VAULT_HASHICORP_VAULT_1_BASE_URL:    'http://vault:8200'
+    VAULT_HASHICORP_VAULT_1_NAME:        'vault'
+  deployment:
+    imagePullSecretsAsYaml: "{{ tpl .Values.global.imagePullSecretsAsYaml . }}"
+    nodeSelector:
+      qos-burstable: "true"
+    resources: {}
+  imageRepository: "{{ tpl .Values.global.registry . }}/platform/docker/connector-server"
+  imageTag:        null
+datascience:
+  configmap:
+    DG_CONFIG_API_TOKEN: 'ACE23D76-1F26-4403-B592-F16A329D542D'
+    DG_CONFIG_API_URL:   'http://datagalaxyservicesweb/api/InternalApi/'
+    DG_CONFIG_ES_URL:    'http://elasticsearch:9200'
+  cronjob:
+    globalSchedule:         "0 23 * * *"
+    imagePullSecretsAsYaml: "{{ tpl .Values.global.imagePullSecretsAsYaml . }}"
+    nodeSelector:
+      qos-best-effort: "true"
+    resources:       {}
+    triggerSchedule: "* * * * *"
+  imageRepository: "{{ tpl .Values.global.registry . }}/platform/docker/datascience"
+  imageTag:        null
+  persistentvolumeclaim:
+    storage: null
+datascienceapi:
+  dcp:
+    imageRepository: "{{ tpl .Values.global.registry . }}/platform/docker/datascience/dcp"
+    imageTag:        null
+  glossarygeneration:
+    imageRepository: "{{ tpl .Values.global.registry . }}/platform/docker/datascience/glossary-generation"
+    imageTag:        null
+  linkssuggestions:
+    imageRepository: "{{ tpl .Values.global.registry . }}/platform/docker/datascience/links-suggestions"
+    imageTag:        null
+  tagssuggestions:
+    imageRepository: "{{ tpl .Values.global.registry . }}/platform/docker/datascience/tags-suggestions"
+    imageTag:        null
+  textquality:
+    imageRepository: "{{ tpl .Values.global.registry . }}/platform/docker/datascience/text-quality"
+    imageTag:        null
+  deployment:
+    imagePullSecretsAsYaml: "{{ tpl .Values.global.imagePullSecretsAsYaml . }}"
+    nodeSelector:
+      qos-best-effort: "true"
+  publicService:
+    loadBalancerSourceRangesAsYaml: "{{ tpl .Values.global.loadBalancerSourceRangesAsYaml . }}"
+elasticsearch-a:
+  configmap:
+    ES_JAVA_OPTS: null
+  imageRepository: "{{ tpl .Values.global.registry . }}/platform/docker/elasticsearch"
+  imageTag:        "1.1.0-7.17.11"
+  publicService:
+    loadBalancerSourceRangesAsYaml: "{{ tpl .Values.global.loadBalancerSourceRangesAsYaml . }}"
+  statefulset:
+    imagePullSecretsAsYaml: "{{ tpl .Values.global.imagePullSecretsAsYaml . }}"
+    nodeSelector:
+      qos-guaranteed: "true"
+    resources: {}
+    storage:   null
+elasticsearch-b:
+  enabled: false
+hubservice:
+  deployment:
+    imagePullSecretsAsYaml: "{{ tpl .Values.global.imagePullSecretsAsYaml . }}"
+    nodeSelector:
+      qos-guaranteed: "true"
+    resources: {}
+  imageRepository: "{{ tpl .Values.global.registry . }}/platform/docker/hubservice"
+  imageTag:        null
+  instanceName:    "{{ tpl .Values.global.instanceName . }}"
+ingress:
+  ingressClassName: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/client-body-buffer-size: "1m"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload";
+      more_set_headers "X-Frame-Options: sameorigin";
+      more_set_headers "X-XSS-Protection: 1;mode=block";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      # CSP: Too restrictive, hard to get the right level to autorise images, scripts...
+      # more_set_headers "Content-Security-Policy: default-src https: 'unsafe-eval' 'unsafe-inline'; object-src 'none'";
+      # We do not apply any rule but we log to the specified uri any incoming issues regarding the rule => disabled because no dedicated endpoint for now
+      # more_set_headers "Content-Security-Policy-Report-Only: default-src https:; report-uri /csp-violation-report-endpoint/";
+    nginx.ingress.kubernetes.io/enable-modsecurity: "true"
+    nginx.ingress.kubernetes.io/modsecurity-snippet: |
+      # On active mod_security pour tous les sites
+      SecRuleEngine On
+      # SecDebugLogLevel 3
+      # SecDebugLog /var/log/debug_modsec_3.log
+      # On autorise mod_security a analyser
+      # le corps des requetes et des reponses
+      SecRequestBodyAccess On
+      SecResponseBodyAccess Off
+      # Disable For bulk coming from PublicAPI but still protect SystemLogin and RequestPasswordReset from brute force
+      SecRule REQUEST_URI @rx bulk \"id:1,ctl:ruleEngine=Off,ctl:requestBodyAccess=Off,log,msg:\'Disable mod-sec for bulk\'\"
+      SecRule REQUEST_URI @rx \bSystemLogin\b|\bRequestPasswordReset\b|\bHealthCheck\b \"id:2,ctl:ruleEngine=On,ctl:requestBodyAccess=On,log,msg:\'Enable mod-sec for sensitive routes\'\"
+      # Taille maximum du corps des requetes en memoire (1OOMB)
+      SecRequestBodyLimit 104857600
+      SecRequestBodyNoFilesLimit 131072
+      SecRequestBodyLimitAction reject
+      # Taille maximum du corps des reponses en memoire (100MB)
+      SecResponseBodyLimit 104857600
+      # On indique un repertoire ou mod_security peut stocker des informations
+      SecDataDir /tmp/
+      SecTmpDir /tmp/
+      SecUploadDir /tmp/upload/
+      SecUploadKeepFiles Off
+      # Gestion des logs
+      # Les trois options sont On, Off et RelevantOnly
+      # Permet de ne journaliser que les requetes qui generent une alerte
+      SecAuditEngine RelevantOnly
+      # On precise quels statuts doivent etre journalise
+      # Ex: ^[45] log les erreurs 4XX et 5XX du serveur
+      SecAuditLogRelevantStatus ^[45]
+      SecAuditLogParts ABIJDEFHZ
+      SecAuditLogType Serial
+      SecAuditLog /dev/stdout
+      SecAuditLogFormat JSON
+      # ModSecurity Phase:1 - Retrieve Request Headers   ,initcol:user=%{ARGS.Login},initcol:session=1
+      SecAction \"phase:1,nolog,pass,initcol:global=global,initcol:ip=%{REMOTE_ADDR},id:5000100\"
+      # ModSecurity Phase:2 - Retrieve Request Body
+      # SecAction \"phase:2,nolog,pass,initcol:USER=%{ARGS.Login},id:5000101\"
+      SecDefaultAction \"phase:2,deny,status:403,log,auditlog\"
+      # Verify that we ve correctly processed the request body.
+      SecRule REQBODY_ERROR !@eq 0 \"id:5000099, phase:2,t:none,log,deny,status:400,msg:\'Failed to parse request body.\',logdata:\'%{reqbody_error_msg}\',severity:2\"
+      # Log for debugging counters...
+      # SecAction \"phase:2,log,pass,msg:\'Current IP=[%{REMOTE_ADDR}], Current SessionId=[%{SESSIONID}], current user =[%{ARGS.Login}], ip.bf_counter=[%{ip.bf_counter}], ip.bf_block=[%{ip.bf_block}]\',id:5000109\"
+      # SecAction \"phase:2,log,pass,msg:\' ip.bf_counter=[%{ip.bf_counter}], ip.bf_block=[%{ip.bf_block}]\',id:5000109\"
+      # Release IP Block if delay expired
+      SecRule ip.expire_ipblock @lt %{TIME_EPOCH} \"phase:2,pass,nolog,setvar:ip.bf_block=0,msg:\'IP ADDRESS RELEASED.\',id:5000101\"
+      # Reset IP counters after 10s
+      SecRule ip.expire_ipcounter @lt %{TIME_EPOCH} \"phase:2,pass,nolog,setvar:ip.bf_counter=0,msg:\'COUNTER RELEASED.\',id:5000102\"
+      # Block this IP address IF ip:bf_block flag has already been set.
+      SecRule ip:bf_block @gt 0 \"phase:2,block,log,setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-CustomRule,msg:\'IP ADDRESS BLOCKED for 1 minute, more than 5 login attempts in 1 minute.\',id:5000103\"
+      # Increment counter for this IP address for SystemLogin or RequestPasswordReset uri
+      SecRule REQUEST_URI @rx \bSystemLogin\b|\bRequestPasswordReset\b|\bHealthCheck\b \"phase:2,t:none,log,pass,setvar:ip.bf_counter=+1,setvar:ip.expire_ipcounter=%{TIME_EPOCH},setvar:ip.expire_ipcounter=+10,id:5000104,msg:\'Found SystemLogin or RequestPasswordReset, ip.bf_counter=[%{ip.bf_counter}]\'\"
+      # When counter equals to {{ .Values.ingress.nginxModSecurity.bruteForceThreshold }}, set blocking flag to 1 with 60 sec of expiration
+      SecRule ip:bf_counter @gt {{ sub .Values.ingress.nginxModSecurity.bruteForceThreshold 1 }} \"phase:2,t:none,log,pass,setvar:ip.bf_block=1,setvar:ip.expire_ipblock=%{TIME_EPOCH},setvar:ip.expire_ipblock=+60,setvar:ip.bf_counter=0,id:5000105,msg:\'Counter equals to 5, ip.bf_block=[%{ip.bf_block}]\'\"
+      # ModSecurity Phase:3 - Retrieve Response Headers
+      # ModSecurity Phase:4 - Retrieve Response Body
+      # ModSecurity Phase:5 - Logging
+    nginx.ingress.kubernetes.io/modsecurity-transaction-id:  "$request_id"
+    nginx.ingress.kubernetes.io/proxy-body-size:             "100m"
+    nginx.ingress.kubernetes.io/proxy-buffer-size:           "512k"
+    nginx.ingress.kubernetes.io/proxy_connect_timeout:       "600"
+    nginx.ingress.kubernetes.io/proxy-max-temp-file-size:    "1024m"
+    nginx.ingress.kubernetes.io/proxy-next-upstream-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-read-timeout:          "3600"
+    nginx.ingress.kubernetes.io/proxy_send_timeout:          "600"
+  apiHosts:
+  - "{{ tpl .Values.global.apiHost . }}"
+  appHosts:
+  - "{{ tpl .Values.global.appHost . }}"
+  webServicesPaths:
+  - /api
+  - /signalr
+  - /Saml2
+  enableApiDoc: false
+  nginxModSecurity:
+    bruteForceThreshold: 5
+kong:
+  fullnameOverride: kong
+  plugins:
+    configMaps:
+    - name: dg-auth
+      pluginName: dg-auth
+  ingressController:
+    installCRDs: false
+  proxy:
+    type: ClusterIP
+  deploymentAnnotations:
+    configmap.reloader.stakater.com/reload: "dg-auth"
+logstash:
+  image:                  "{{ tpl .Values.global.registry . }}/platform/docker/logstash"
+  imagePullSecretsAsYaml: "{{ tpl .Values.global.imagePullSecretsAsYaml . }}"
+  imageTag: "7.17.11"
+  fullnameOverride: "logstash"
+  logstashConfig:
+    logstash.yml: |
+      http.host: 0.0.0.0
+      xpack.management.enabled: false
+    pipelines.yml: |
+      - pipeline.id: intake
+        path.config: "/usr/share/logstash/pipeline"
+        queue.type: persisted
+        config.string: |
+          input {
+            tcp {
+              port => 4040
+              codec => json
+            }
+          }
+          filter {
+            if [timestamp] {
+              date {
+                match => [ "timestamp", "yyyy-MM-dd'T'HH:mm:ss.SSSZ" ]
+                remove_field => "timestamp"
+              }
+            }
+            if [type] and [type] in ["log", "metric"] {
+              mutate { add_field => { "[@metadata][type]" => "%{type}" } }
+            }
+            mutate { add_field => { "datagalaxy_host" => "%{host}" } }
+          }
+          output { pipeline { send_to => [es, http] } }
+      - pipeline.id: buffered-es
+        queue.type: persisted
+        config.string: |
+          input { pipeline { address => es } }
+          output {
+            if [@metadata][type] in ["log", "metric"] {
+              elasticsearch {
+                index => "datagalaxy-%{[@metadata][type]}-%{+YYYY.MM}"
+                hosts => [ "elasticsearch-a" ]
+                ssl => false
+                ssl_certificate_verification => false
+                manage_template => false
+              }
+            }
+          }
+      - pipeline.id: buffered-http
+        queue.type: persisted
+        config.string: |
+          input { pipeline { address => http } }
+          output {
+            if [@metadata][type] in ["log", "metric"] {
+              http {
+                format=>"json"
+                http_method=>"post"
+                url=>"http://20.74.8.193:8080"
+                codec => json_lines
+              }
+            }
+          }
+  logstashJavaOpts: null
+  nodeSelector:
+    qos-guaranteed: "true"
+  resources: {}
+  service:
+    annotations: {}
+    ports:
+    - port: 4040
+    type: "ClusterIP"
+minio:
+  DeploymentUpdate:
+    type: "Recreate"
+  fullnameOverride: "minio"
+  image:
+    repository: "{{ tpl .Values.global.registry . }}/platform/docker/minio"
+  imagePullSecretsAsYaml: "{{ tpl .Values.global.imagePullSecretsAsYaml . }}"
+  nodeSelector:
+    qos-guaranteed: "true"
+  persistence:
+    size: null
+  resources: {}
+publicapi:
+  service:
+    annotations:
+      konghq.com/connect-timeout: "600000"
+      konghq.com/read-timeout: "3600000"
+      konghq.com/write-timeout: "600000"
+  configmap:
+    INTERNAL_API_URL: 'http://datagalaxyservicesweb/api'
+    TCP_ADDRESS:      'logstash'
+    TCP_PORT:         '4040'
+  deployment:
+    imagePullSecretsAsYaml: "{{ tpl .Values.global.imagePullSecretsAsYaml . }}"
+    nodeSelector:
+      qos-guaranteed: "true"
+    resources: {}
+  imageRepository: "{{ tpl .Values.global.registry . }}/platform/docker/publicapi"
+  imageTag:        null
+  instanceName:    "{{ tpl .Values.global.instanceName . }}"
+sqlserver:
+  imageRepository: "{{ tpl .Values.global.registry . }}/platform/docker/sqlserver"
+  imageTag:        "2019-CU21-ubuntu-20.04"
+  publicService:
+    loadBalancerSourceRangesAsYaml: "{{ tpl .Values.global.loadBalancerSourceRangesAsYaml . }}"
+  statefulset:
+    imagePullSecretsAsYaml: "{{ tpl .Values.global.imagePullSecretsAsYaml . }}"
+    nodeSelector:
+      qos-guaranteed: "true"
+    resources: {}
+    storage:   null
+useClientCertificate: false
+vault:
+  fullnameOverride: "vault"
+  injector:
+    enabled: false
+  server:
+    extraSecretEnvironmentVars:
+    - envName:        "VAULT_UNSEAL_KEY_0"
+      secretKey:      "unsealKey0"
+      secretName:     "vault-init-data"
+      secretOptional: true
+    - envName:        "VAULT_UNSEAL_KEY_1"
+      secretKey:      "unsealKey1"
+      secretName:     "vault-init-data"
+      secretOptional: true
+    - envName:        "VAULT_UNSEAL_KEY_2"
+      secretKey:      "unsealKey2"
+      secretName:     "vault-init-data"
+      secretOptional: true
+    image:
+      repository: "{{ tpl .Values.global.registry . }}/platform/docker/vault"
+    imagePullSecretsAsYaml: "{{ tpl .Values.global.imagePullSecretsAsYaml . }}"
+    nodeSelector: |
+      qos-guaranteed: "true"
+    postStart:
+    - "/bin/sh"
+    - "-c"
+    - "while true; do vault status; vault_status=$?; if [ $vault_status -eq 0 ]; then break; elif [ $vault_status -eq 2 ]; then vault operator unseal $VAULT_UNSEAL_KEY_0; vault operator unseal $VAULT_UNSEAL_KEY_1; vault operator unseal $VAULT_UNSEAL_KEY_2; break; else sleep 1s; fi done"
+    updateStrategyType: "RollingUpdate"
+  standalone:
+    config: |
+      disable_mlock = true
+      listener "tcp" {
+        address = "[::]:8200"
+        cluster_address = "[::]:8201"
+        tls_disable = 1
+      }
+      storage "raft" {
+        path = "/vault/data"
+      }
+      ui = false
+webclient:
+  configmap:
+    DG_CONFIG_API_HOST:        '"https://{{ tpl .Values.global.appHost . }}/"'
+    DG_CONFIG_CLIENT_HOST:     '"https://{{ tpl .Values.global.appHost . }}/"'
+    DG_CONFIG_PUBLIC_API_HOST: '"https://{{ tpl .Values.global.apiHost . }}/v2/documentation/"'
+    DG_CONFIG_TYPE:            null
+    DG_CONFIG_VERSION_NAME:    null
+    DG_CONFIG_VERSION_NUMBER:  '"{{ tpl .Values.global.productRelease . }}"'
+  deployment:
+    imagePullSecretsAsYaml: "{{ tpl .Values.global.imagePullSecretsAsYaml . }}"
+    nodeSelector:
+      qos-guaranteed: "true"
+    resources: {}
+  imageRepository: "{{ tpl .Values.global.registry . }}/platform/docker/webclient"
+  imageTag:        null
+webservices:
+  datagalaxyadminservice:
+    imageRepository: "{{ tpl .Values.global.registry . }}/platform/docker/adminservice"
+    imageTag:        null
+  datagalaxyservicesweb:
+    service:
+      annotations:
+        konghq.com/connect-timeout: "600000"
+        konghq.com/read-timeout: "3600000"
+        konghq.com/write-timeout: "600000"
+    configmap:
+      ConnectivityApiBaseUrl:               'http://connectivity-api:4000'
+      ConnectorServerHost:                  'http://connector-server:8000'
+      DataScienceService__Configurations__DcpSuggestion__Url:              'http://datascienceapi:5001'
+      DataScienceService__Configurations__GlossaryGeneration__Url:         'http://datascienceapi:5005'
+      DataScienceService__Configurations__LinkSuggestion__Url:             'http://datascienceapi:5004'
+      DataScienceService__Configurations__TagSuggestion__Url:              'http://datascienceapi:5002'
+      DataScienceService__Configurations__TextQuality__Url:                'http://datascienceapi:5003'
+      DG_DAILY_MAINTENANCE_CRON_EXPRESSION: '0 0 * * *'
+      DG_VERSION:                           null
+      ElasticsearchUrl:                     'http://elasticsearch-a:9200'
+      PublicApiHost:                        'https://{{ tpl .Values.global.apiHost . }}/v2'
+      ServerHostName:                       'https://{{ tpl .Values.global.appHost . }}'
+      SQLCMDDBNAME:                         'DATAGALAXY'
+      SQLCMDSERVER:                         'sqlserver'
+      SQLCMDUSER:                           'sa'
+      WebClientUrlRoot:                     'https://{{ tpl .Values.global.appHost . }}/'
+    imageRepository: "{{ tpl .Values.global.registry . }}/platform/docker/webservices"
+    imageTag:        null
+  datagalaxyutilitytoolconsole:
+    imageRepository: "{{ tpl .Values.global.registry . }}/platform/docker/utilitytool"
+    imageTag:        null
+  filebeat:
+    imageRepository: "{{ tpl .Values.global.registry . }}/platform/docker/filebeat"
+    imageTag:        "7.17.11"
+  instanceName: "{{ tpl .Values.global.instanceName . }}"
+  statefulset:
+    datagalaxyadminservice:
+      resources: {}
+    datagalaxyservicesweb:
+      resources: {}
+    datagalaxyutilitytoolconsole:
+      resources: {}
+    filebeat:
+      resources: {}
+    imagePullSecretsAsYaml: "{{ tpl .Values.global.imagePullSecretsAsYaml . }}"
+    nodeSelector:
+      qos-burstable: "true"
+    storage: null

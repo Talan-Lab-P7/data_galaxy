@@ -1,0 +1,12 @@
+{{ if .Values.sqlserver.publicService.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-sqlserver-ingress-from-all
+spec:
+  ingress:
+  - {}
+  podSelector:
+    matchLabels:
+      app: sqlserver
+{{- end }}

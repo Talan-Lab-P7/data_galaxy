@@ -1,0 +1,40 @@
+global:
+  chartVersion:   "platform/helm:1.15.9"
+  productRelease: "platform/3.4.7"
+
+connectivity-api:
+  imageTag: "1.5.1"
+
+connector-server:
+  imageTag: "1.10.0"
+
+datascienceapi:
+  imageTag: "1.0.2"
+
+hubservice:
+  imageTag: "3.4.1"
+
+publicapi:
+  imageTag: "2.12.2"
+
+webclient:
+  configmap:
+    DG_CONFIG_VERSION_NUMBER: '"3.4.3"'
+  imageTag: "3.4.3"
+
+webservices:
+  datagalaxyadminservice:
+    imageTag: "3.4.1"
+  datagalaxyservicesweb:
+    configmap:
+      DG_VERSION: '2022.6.2'
+    imageTag: "3.4.2"
+  datagalaxyutilitytoolconsole:
+    imageTag: "3.4.6"
+  # Backport from 3.5
+  filebeat:
+    imageTag: "7.17.6"
+
+# Backport from 3.5
+elasticsearch-a:
+  imageTag: "1.1.0-7.17.6"

@@ -1,0 +1,1 @@
+The "DataGalaxy" platform was successfully installed in "{{ .Release.Namespace }}" namespace.

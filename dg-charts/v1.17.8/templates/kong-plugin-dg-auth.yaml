@@ -1,0 +1,32 @@
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: dg-auth
+config:
+  included_routes:
+    - "/v2/.*"
+    - "/api/.*"
+  excluded_routes:
+    - "/api/Authentication/.*"
+    - "/api/Data/LoadSystemData"
+    - "/api/Monitoring/GetTime"
+    - "/api/Monitoring/LogError"
+    - "/api/Monitoring/HealthCheck"
+    - "/api/Monitoring/ServerVersion"
+    - "/api/ClientAdmin/GetImage"
+    - "/api/User/GetImage"
+    - "/api/ConnectorDownload/GetImage"
+    - "/api/Connectivity/GetConnectorImage"
+    - "/api/Login/SystemLogin"
+    - "/api/Login/ClientLogin"
+    - "/api/Login/IntegrationLogin"
+    - "/api/Login/ExternalSystemLogin"
+    - "/api/Account/CheckSecurityToken"
+    - "/api/Account/SetInitialPassword"
+    - "/api/Account/RequestPasswordReset"
+    - "/api/Account/ResetPassword"
+    - "/v2/credentials"
+    - "/v2/documentation.*"
+    - "/v2/public.*"
+    - "/v2/DG-logo.png"
+plugin: dg-auth
